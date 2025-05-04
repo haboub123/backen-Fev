@@ -3,8 +3,10 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require("express-session"); //session
 
 const{connectToMongoDb } = require("./conf/db.js");
+const cors = require("cors");
 
 require("dotenv").config();
 
@@ -31,6 +33,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+ app.use(cors({
+   origin:"http://localhost:3000",
+   methods:"GET,POST,PUT,Delete",
+ }))
+
+app.use(session({   //cobfig session
+  secret: "net secret pfe",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: {secure: false},
+    maxAge: 24*60*60,
+  
+  },  
+}))
+
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
@@ -65,5 +85,5 @@ app.use(function (err, req, res, next) {
 const server = http.createServer(app);
 server.listen(process.env.port, () => {
   connectToMongoDb (),
-  console.log("app is running on part 5000");
+  console.log("app is running on port 5000");
 });

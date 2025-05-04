@@ -5,10 +5,10 @@ const AbonnementSchema = new mongoose.Schema(
         prix:Number,
         duree:Number,
 
-        clients: [{
+        client: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
-          }],
+          },
 
           promotion: { type: mongoose.Schema.Types.ObjectId, ref: "Promotion", required: false }
 
