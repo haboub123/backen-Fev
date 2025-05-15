@@ -17,7 +17,7 @@ var indexRouter = require('./routes/indexRouter');
 var usersRouter = require('./routes/usersRouter.js');
 var osRouter = require('./routes/osRouter');
 var AbonnementRouter = require('./routes/AbonnementRouter');
-var ProgrammeRouter = require("./routes/ProgrammeRouter");
+var ActiviteRouter = require("./routes/ActiviteRouter");
 var SeanceRouter = require("./routes/SeanceRouter.js");
 var SalleRouter = require("./routes/SalleRouter.js");
 const factureRouter = require('./routes/factureRouter.js');
@@ -33,12 +33,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 
- app.use(cors({
-   origin:"http://localhost:3000",
-   methods:"GET,POST,PUT,Delete",
- }))
+
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 
 app.use(session({   //cobfig session
   secret: "net secret pfe",
@@ -57,7 +62,7 @@ app.use('/users', usersRouter);
 app.use('/os', osRouter);
 app.use('/Abonnement', AbonnementRouter);
 app.use('/Facture', factureRouter);
-app.use('/Programme',  ProgrammeRouter);
+app.use('/Activite',  ActiviteRouter);
 app.use('/Seance',SeanceRouter);
 app.use('/salle',SalleRouter);
 app.use('/notification',notificationRouter);

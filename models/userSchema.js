@@ -24,12 +24,15 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: ["admin", "client", "coach"],
         },
+        specialite: {
+            type: String,
+            default: "Not specified"
+        }, 
         user_image: { type: String, require: false, default: "client.png" },
         age: { type: Number },
         count: { type: Number, default: 0 },
 
         abonnement: { type: mongoose.Schema.Types.ObjectId, ref: "Abonnement" },
-        programmes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Programme" }],
         notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notification" }],
         factures: [{ type: mongoose.Schema.Types.ObjectId, ref: "Facture" }],
         avis: [{ type: mongoose.Schema.Types.ObjectId, ref: "Avis" }],
@@ -60,10 +63,10 @@ userSchema.pre("save", async function (next) {
     }
 });
 
-userSchema.post("save", async function (req, res, next) {
+userSchema.post("save", function (doc) {
     console.log("new user was created & saved successfully");
-    next();
 });
+
 
 userSchema.statics.login = async function (email, password) {
     try {

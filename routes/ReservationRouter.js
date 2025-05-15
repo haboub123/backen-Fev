@@ -1,15 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const Reservationcontroller = require("../controllers/ReservationController");
+const ReservationController = require("../controllers/ReservationController");
+const { requireAuthUser } = require("../middlewares/authMiddleware");
 
-router.post("/addReservation", Reservationcontroller.addReservation);
-router.get("/getAllReservations", Reservationcontroller.getAllReservations);
-router.get("/getReservationById/:id", Reservationcontroller.deleteReservationById);
-router.delete("/deleteReservationById/:id",Reservationcontroller.deleteReservationById);
-router.put("/updateReservation/:id", Reservationcontroller.updateReservation);
-router.put('/affect',Reservationcontroller.affect);
+// Routes publiques
+router.post("/addReservation", ReservationController.addReservation);
+
+// Routes protégées nécessitant une authentification
+router.get("/getUserReservations", requireAuthUser, ReservationController.getUserReservations);
+router.delete("/deleteReservationById/:id", requireAuthUser, ReservationController.deleteReservationById);
+router.put('/affect', requireAuthUser, ReservationController.affect);
+
 module.exports = router;
-
-
-
-

@@ -6,7 +6,7 @@ const SalleSchema = new mongoose.Schema(
         capacite: Number,
         description:String,
         
-       seance : [{ type: mongoose.Schema.Types.ObjectId,ref: "Seance" }]
+       seances : [{ type: mongoose.Schema.Types.ObjectId,ref: "Seance" }]
     },
     { timestamps: true }
 );

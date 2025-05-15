@@ -9,6 +9,10 @@ const createToken = (id) => {
     return jwt.sign({id},'net secret pfe', {expiresIn: maxTime })
 }
 
+
+
+
+
 module.exports.addUserClient = async (req, res) => {
     try {
         const { username, email, password} = req.body;
@@ -23,6 +27,39 @@ module.exports.addUserClient = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+module.exports.addUserClientWithImg = async (req, res) => {
+    try {
+        console.log("Raw Body:", req.body); // Debug raw body
+        console.log("File Details:", req.file); // Debug file
+
+        const { username, email, password } = req.body;
+        const roleClient = 'client';  
+        const { filename } = req.file || {};
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: "Champs manquants" });
+        }
+
+        const user = await userModel.create({
+            username,
+            email,
+            password,
+            role: roleClient,
+            user_image: filename
+        });
+
+        res.status(200).json({ user });
+    } catch (error) {
+        console.error("Error:", error); // Log the error
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
+
+
+
 module.exports.addUserAdmin = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -37,6 +74,11 @@ module.exports.addUserAdmin = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+
+
+
+
 module.exports.addUserCoach = async (req, res) => {
     try {
         const { username, email, password, specialite } = req.body;
@@ -56,11 +98,11 @@ module.exports.addUserCoach = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 module.exports.getAllUsers= async (req,res) => {
     try {
         const userListe = await userModel.find()
         .populate("abonnement")
-            .populate("programmes")
             .populate("notifications")
             .populate("factures")
             .populate("avis")
@@ -96,19 +138,38 @@ module.exports.deleteUserById = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+
+
 module.exports.updateuserById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { email, username } = req.body;
+  try {
+    const { id } = req.params;
+    const { email, username, specialite } = req.body;
 
-        await userModel.findByIdAndUpdate(id, { $set: { email, username } });
-        const updated = await userModel.findById(id);
-
-        res.status(200).json({ updated });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
-}
+
+    // Préparer les champs à mettre à jour
+    const updateFields = { email, username };
+
+    // Si c'est un coach, on met à jour aussi la spécialité
+    if (user.role === "coach" && specialite) {
+      updateFields.specialite = specialite;
+    }
+
+    await userModel.findByIdAndUpdate(id, { $set: updateFields });
+
+    const updated = await userModel.findById(id);
+    res.status(200).json({ updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
 module.exports.searchUserByUsername = async (req, res) => {
     try {
         const { username } = req.query;
@@ -147,5 +208,13 @@ module.exports.logout= async (req,res) => {
         res.status(500).json({message: error.message});
     }
 }
+module.exports.getAllCoachs = async (req, res) => {
+  try {
+    const coachs = await userModel.find({ role: 'coach' });
+    res.status(200).json({ coachs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
