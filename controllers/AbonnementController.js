@@ -1,20 +1,24 @@
 const AbonnementModel = require('../models/AbonnementSchema');
 const usermodel = require("../models/userSchema");
+
 module.exports.getAllAbonnement = async (req, res) => {
   try {
     const abonnementListe = await AbonnementModel.find()
-      .populate('client', 'username email')  
-      .populate('promotion', 'type description');  
+      .populate('client', 'username email')
+      .populate('clients', 'username email')
+      .populate('promotion', 'type description');
     res.status(200).json({ abonnementListe });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 module.exports.getAbonnementById = async (req, res) => {
   try {
     const id = req.params.id;
     const abonnement = await AbonnementModel.findById(id)
       .populate('client', 'username email')
+      .populate('clients', 'username email')
       .populate('promotion', 'type description');
     if (!abonnement) {
       throw new Error("abonnement introuvable")
@@ -24,6 +28,7 @@ module.exports.getAbonnementById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 module.exports.deleteAbonnementById = async (req, res) => {
   try {
     const id = req.params.id;
@@ -37,13 +42,16 @@ module.exports.deleteAbonnementById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 module.exports.addAbonnement = async (req, res) => {
   try {
     const { type, prix, duree } = req.body;
 
-
     const abonnement = await AbonnementModel.create({
-      type, prix, duree
+      type, 
+      prix, 
+      duree,
+      clients: []
     });
 
     res.status(200).json({ abonnement });
@@ -58,27 +66,15 @@ module.exports.updateAbonnement = async (req, res) => {
     const { type, prix, duree } = req.body;
     const abonnementById = await AbonnementModel.findById(id);
     if (!abonnementById) {
-      throw new Error(" Abonnement introuvable");
+      throw new Error("Abonnement introuvable");
     }
     if (!type && !prix && !duree) {
-  throw new Error("Aucune donnée valide");
-} {
-      throw new Error(" Aucune donnée valide ");
+      throw new Error("Aucune donnée valide");
     }
     const updated = await AbonnementModel.findByIdAndUpdate(id, {
       $set: { type, prix, duree },
     });
     res.status(200).json("updated");
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-module.exports.getAllAbonnement = async (req, res) => {
-  try {
-    const abonnementListe = await AbonnementModel.find()
-      .populate('client', 'username email')  
-      .populate('promotion', 'type description');  
-    res.status(200).json({ abonnementListe });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -90,24 +86,36 @@ module.exports.affect = async (req, res) => {
     const { userId, abonnementId } = req.body;
 
     const abonnementById = await AbonnementModel.findById(abonnementId);
-
     if (!abonnementById) {
-      throw new Error("abonnement introuvable");
-    }
-    const checkIfUserExists = await usermodel.findById(userId);
-    if (!checkIfUserExists) {
-      throw new Error("User not found");
+      throw new Error("Abonnement introuvable");
     }
 
+    const user = await usermodel.findById(userId);
+    if (!user) {
+      throw new Error("Utilisateur introuvable");
+    }
+
+    // Calcul des dates
+    const dateDebut = new Date();
+    const dateFin = new Date(dateDebut.getTime() + abonnementById.duree * 30 * 24 * 60 * 60 * 1000); // en mois
+
+    // Ajouter l'utilisateur dans la liste des clients de l'abonnement
     await AbonnementModel.findByIdAndUpdate(abonnementId, {
-      $push: { clients: userId },
+      $addToSet: { clients: userId }
     });
 
+    // Ajouter cet abonnement dans la liste des abonnements de l'utilisateur avec dateDebut et dateFin
     await usermodel.findByIdAndUpdate(userId, {
-      $set: { abonnement: abonnementId },
+      $push: {
+        abonnements: {
+          abonnement: abonnementId,
+          dateDebut,
+          dateFin
+        }
+      }
     });
 
-    res.status(200).json('affected');
+    res.status(200).json("Abonnement affecté avec succès");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -129,12 +137,13 @@ module.exports.desaffect = async (req, res) => {
       throw new Error("Utilisateur introuvable");
     }
 
-    // ❌ Supprimer l'utilisateur de la liste des clients (tableau)
+    // Supprimer l'utilisateur de la liste des clients (tableau)
     await AbonnementModel.findByIdAndUpdate(abonnementId, {
       $pull: { clients: userId },
+      $unset: { client: "" }
     });
 
-    // ❌ Supprimer l’abonnement de l’utilisateur (champ simple)
+    // Supprimer l'abonnement de l'utilisateur (champ simple)
     await usermodel.findByIdAndUpdate(userId, {
       $unset: { abonnement: 1 },
     });

@@ -92,7 +92,7 @@ module.exports.affect = async (req, res) => {
         $push: {factures : factureId},
       });
   
-      res.status(200).json('affected');
+      res.status(200).json('affected'   );
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

@@ -34,6 +34,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use("/uploads", express.static(path.join(__dirname, "Uploads")));
 
 
 
@@ -70,6 +71,8 @@ app.use('/avis',avisRouter);
 app.use('/reservation',reservationRouter);
 app.use('/promotion',promotionRouter);
 app.use('/inscrire',inscrireRouter);
+app.use("/uploads", express.static("uploads")); // pour servir les images
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

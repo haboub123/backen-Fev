@@ -9,6 +9,7 @@ router.put('/updateSeance/:id',SeanceController.updateSeance);
 router.delete('/deleteSeanceById/:id',SeanceController.deleteSeanceById);
 router.put('/affect',SeanceController.affect);
 router.get('/getSeancesByActivite/:activiteId', SeanceController.getSeancesByActivite);
+//router.get('/getCoachSeances/:coachId', SeanceController.getCoachSeances);
 
 
 

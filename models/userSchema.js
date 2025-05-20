@@ -32,7 +32,14 @@ const userSchema = new mongoose.Schema(
         age: { type: Number },
         count: { type: Number, default: 0 },
 
-        abonnement: { type: mongoose.Schema.Types.ObjectId, ref: "Abonnement" },
+       abonnements: [
+                    {
+                        abonnement: { type: mongoose.Schema.Types.ObjectId, ref: "Abonnement" },
+                        dateDebut: Date,
+                        dateFin: Date
+                    }
+        ]
+,
         notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notification" }],
         factures: [{ type: mongoose.Schema.Types.ObjectId, ref: "Facture" }],
         avis: [{ type: mongoose.Schema.Types.ObjectId, ref: "Avis" }],
