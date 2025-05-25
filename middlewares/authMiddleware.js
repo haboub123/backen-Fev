@@ -2,25 +2,28 @@ const jwt = require("jsonwebtoken");
 const userModel = require("../models/userSchema");
 
 const requireAuthUser = (req, res, next) => {
-   const token = req.cookies.jwt_token_9antra;
+  const token = req.cookies.jwt_token_9antra;
 
-  //const authHeader = req.headers.authorization;
-  //const token = authHeader && authHeader.split(" ")[1];
-  // console.log("token", token);
   if (token) {
-    jwt.verify(token, 'net secret pfe', async (err, decodedToken) => {
+    jwt.verify(token, "net secret pfe", async (err, decodedToken) => {
       if (err) {
-        console.log("il ya une erreur au niveau du token", err.message);
-        req.session.user = null;  //session null
-        res.json("/Problem_token");
+        console.log("Erreur lors de la vérification du token :", err.message);
+        req.session.user = null;
+        return res.status(401).json({ message: "Token invalide" });
       } else {
-        req.session.user = await userModel.findById(decodedToken.id); //session feha user
+        const user = await userModel.findById(decodedToken.id);
+        if (!user) {
+          req.session.user = null;
+          return res.status(404).json({ message: "Utilisateur non trouvé" });
+        }
+        req.session.user = user;
         next();
       }
     });
   } else {
-   req.session.user = null; //session null
-    res.json("/pas_de_token");
+    req.session.user = null;
+    return res.status(401).json({ message: "Utilisateur non authentifié" });
   }
 };
+
 module.exports = { requireAuthUser };

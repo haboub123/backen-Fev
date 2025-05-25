@@ -1,15 +1,11 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const NotificationSchema = new mongoose.Schema(
-    {
-        contenu: { type: String, required: true }, // Obligatoire
-        dateEnvoi: Date,
-        statut: String,
-        
-        clients: [{   type: mongoose.Schema.Types.ObjectId,ref: "User" }]
-    },
-    { timestamps: true }
-);
+const notificationSchema = new mongoose.Schema({
+    contenu: { type: String, required: true },
+    dateEnvoi: { type: Date, default: Date.now },
+    statut: { type: String, enum: ['lu', 'non lu'], default: 'non lu' },
+    roleCible: { type: String, enum: ['admin', 'coach', 'client'], required: true },
+    clients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+});
 
-const Notification = mongoose.model("Notification", NotificationSchema);
-module.exports = Notification;
+module.exports = mongoose.model('Notification', notificationSchema);

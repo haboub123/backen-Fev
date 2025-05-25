@@ -148,7 +148,7 @@ module.exports.deleteUserById = async (req, res) => {
 module.exports.updateuserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, username, specialite } = req.body;
+    const { email, username, specialite ,age} = req.body;
 
     const user = await userModel.findById(id);
     if (!user) {

@@ -1,11 +1,13 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-const NotificationController=require('../controllers/NotificationController');
+const NotificationController = require("../controllers/NotificationController");
+const { requireAuthUser } = require("../middlewares/authMiddleware");
 
-router.post('/addNotification',NotificationController.addNotification);
-router.get('/getAllNotifications',NotificationController.getAllNotifications); 
-router.get("/etNotificationById/:id", NotificationController.getNotificationById);
-router.delete("/deleteNotificationById/:id",NotificationController.deleteNotificationById);
-router.put("/updateNotification/:id", NotificationController.updateNotification);
+router.post("/addNotification", requireAuthUser, NotificationController.addNotification);
+router.get("/getAllNotifications", requireAuthUser, NotificationController.getAllNotifications);
+router.get("/countUnread", requireAuthUser, NotificationController.countUnreadNotifications);
+router.get("/getNotificationById/:id", requireAuthUser, NotificationController.getNotificationById);
+router.delete("/deleteNotificationById/:id", requireAuthUser, NotificationController.deleteNotificationById);
+router.put("/updateNotification/:id", requireAuthUser, NotificationController.updateNotification);
 
 module.exports = router;

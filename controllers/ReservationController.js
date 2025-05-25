@@ -22,7 +22,6 @@ module.exports.addReservation = async (req, res) => {
   }
 };
 
-// Get user's reservations
 module.exports.getUserReservations = async (req, res) => {
   try {
     // userId is extracted from session (set by requireAuthUser middleware)
