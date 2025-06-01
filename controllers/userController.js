@@ -1,5 +1,7 @@
 const userModel = require("../models/userSchema");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto"); // Ajout pour générer un token
 
 const maxTime = 24 * 60 * 60;
 const createToken = (id) => {
@@ -71,7 +73,7 @@ module.exports.addUserAdmin = async (req, res) => {
 
 module.exports.addUserCoach = async (req, res) => {
   try {
-    const { username, email, password, specialite,age } = req.body;
+    const { username, email, password, specialite, age } = req.body;
     const roleCoach = "coach";
 
     const user = await userModel.create({
@@ -148,7 +150,7 @@ module.exports.deleteUserById = async (req, res) => {
 module.exports.updateuserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, username, specialite ,age} = req.body;
+    const { email, username, specialite, age } = req.body;
 
     const user = await userModel.findById(id);
     if (!user) {
@@ -160,10 +162,9 @@ module.exports.updateuserById = async (req, res) => {
     if (user.role === "coach" && specialite) {
       updateFields.specialite = specialite;
     }
-    if (user.role === "coach" && age) { // Ajout de la condition pour age
+    if (user.role === "coach" && age) {
       updateFields.age = age;
     }
-
 
     await userModel.findByIdAndUpdate(id, { $set: updateFields });
 
@@ -199,6 +200,77 @@ module.exports.login = async (req, res) => {
     const token = createToken(user._id);
     res.cookie("jwt_token_9antra", token, { httpOnly: false, maxAge: maxTime * 1000 });
     res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Dans votre contrôleur backend (userController.js)
+module.exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Vérifie si l'email existe
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Aucun utilisateur trouvé avec cet email." });
+    }
+
+    // Génère un token de réinitialisation
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetToken = token;
+    user.resetTokenExpiration = Date.now() + 3600000; // Token valide pendant 1 heure
+    await user.save();
+
+    // Configure Nodemailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    // CORRECTION: Pointer vers le frontend React (port 3000) au lieu du backend (port 5000)
+    const localIp = "192.168.56.198"; // Ton adresse IP (sans espace au début)
+    const resetLink = `http://${localIp}:3000/reset-password/${token}`; // Port 3000 pour React
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Réinitialisation de votre mot de passe",
+      text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}. Ce lien expire dans 1 heure.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Un lien de réinitialisation a été envoyé à votre email." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Cherche l'utilisateur avec le token
+    const user = await userModel.findOne({
+      resetToken: token,
+      resetTokenExpiration: { $gt: Date.now() }, // Vérifie que le token n'a pas expiré
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Token invalide ou expiré." });
+    }
+
+    // Met à jour le mot de passe
+    user.password = newPassword; // Le hachage sera géré par le middleware pre("save")
+    user.resetToken = undefined;
+    user.resetTokenExpiration = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -274,7 +346,7 @@ module.exports.addUserCoachWithImg = async (req, res) => {
       role: roleCoach,
       specialite,
       age,
-      user_image: filename, // l'image enregistrée
+      user_image: filename,
     });
 
     res.status(200).json({ user });
