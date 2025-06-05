@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
       minLength: 8,
     },
     role: {
@@ -30,6 +29,7 @@ const userSchema = new mongoose.Schema(
     },
     user_image: { type: String, required: false, default: "client.png" },
     age: { type: Number },
+    phone: { type: String }, // Nouveau champ pour le numéro de téléphone
     count: { type: Number, default: 0 },
     abonnements: [
       {
@@ -45,7 +45,6 @@ const userSchema = new mongoose.Schema(
     seances: [{ type: mongoose.Schema.Types.ObjectId, ref: "Seance" }],
     etat: Boolean,
     ban: Boolean,
-    // Ajout des champs pour la réinitialisation
     resetToken: { type: String },
     resetTokenExpiration: { type: Date },
   },
@@ -54,12 +53,15 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function (next) {
   try {
-    const salt = await bcrypt.genSalt();
     const user = this;
-    // Hache le mot de passe uniquement s'il a été modifié
-    if (user.isModified("password")) {
+    
+    // Vérifier si le mot de passe doit être hashé
+    // (évite le double hash pour les mots de passe déjà traités)
+    if (user.isModified("password") && !user._skipPasswordHash) {
+      const salt = await bcrypt.genSalt();
       user.password = await bcrypt.hash(user.password, salt);
     }
+    
     user.etat = false;
     user.ban = true;
     user.count = user.count + 1;
@@ -74,17 +76,23 @@ userSchema.post("save", function (doc) {
 });
 
 userSchema.statics.login = async function (email, password) {
+  console.log("Tentative de login pour email:", email);
   const user = await this.findOne({ email });
-  if (user) {
-    const auth = await bcrypt.compare(password, user.password);
-    if (auth) {
-      return user;
-    } else {
-      throw new Error("password invalid");
-    }
-  } else {
-    throw new Error("email not found");
+  if (!user) {
+    console.log("Utilisateur non trouvé pour email:", email);
+    throw new Error("Email ou mot de passe invalide.");
   }
+
+  console.log("Mot de passe stocké:", user.password);
+  console.log("Mot de passe fourni:", password);
+  const isMatch = await bcrypt.compare(password, user.password);
+  console.log("Comparaison réussie:", isMatch);
+  if (!isMatch) {
+    console.log("Mot de passe invalide pour email:", email);
+    throw new Error("Email ou mot de passe invalide.");
+  }
+
+  return user;
 };
 
 const User = mongoose.model("User", userSchema);

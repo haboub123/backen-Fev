@@ -69,6 +69,9 @@ module.exports.getAllAvis = async (req, res) => {
         });
     }
 
+    // Filtrer les avis pour ne garder que ceux avec un client et une séance valides
+    avisListe = avisListe.filter((avis) => avis.client && avis.seance);
+
     console.log("Avis avec population :", avisListe);
     res.status(200).json({ avisListe });
   } catch (error) {
@@ -118,9 +121,25 @@ module.exports.toggleShare = async (req, res) => {
       return res.status(403).json({ message: "Accès refusé : réservé aux administrateurs" });
     }
 
-    const avis = await avisModel.findById(id);
+    const avis = await avisModel
+      .findById(id)
+      .populate("client", "username")
+      .populate({
+        path: "seance",
+        populate: [
+          { path: "coachs", select: "username" },
+          { path: "activite", select: "nom" },
+        ],
+        select: "titre",
+      });
+
     if (!avis) {
       return res.status(404).json({ message: "Avis introuvable" });
+    }
+
+    // Vérifier que l'avis a un client et une séance valides avant de modifier isShared
+    if (!avis.client || !avis.seance) {
+      return res.status(400).json({ message: "Cet avis ne peut pas être partagé car il manque des informations (client ou séance)." });
     }
 
     avis.isShared = !avis.isShared;
@@ -136,6 +155,10 @@ module.exports.toggleShare = async (req, res) => {
 // Récupérer les avis partagés
 module.exports.getSharedAvis = async (req, res) => {
   try {
+    console.log("Début de getSharedAvis");
+    const avisInitial = await avisModel.find({ isShared: true }).sort({ note: -1 });
+    console.log("Avis initiaux trouvés (avant populate) :", avisInitial);
+
     const avisListe = await avisModel
       .find({ isShared: true })
       .sort({ note: -1 })
@@ -149,8 +172,16 @@ module.exports.getSharedAvis = async (req, res) => {
         select: "titre",
       });
 
-    console.log("Avis partagés récupérés :", avisListe);
-    res.status(200).json({ avisListe });
+    console.log("Avis après populate :", avisListe);
+
+    // Filtrer les avis pour ne garder que ceux avec un client valide (seance peut être null)
+    const filteredAvis = avisListe.filter((avis) => {
+      console.log("Filtrage de l'avis :", avis._id, "Client :", avis.client);
+      return avis.client;
+    });
+
+    console.log("Avis partagés récupérés (après filtrage) :", filteredAvis);
+    res.status(200).json({ avisListe: filteredAvis });
   } catch (error) {
     console.error("Erreur lors de la récupération des avis partagés :", error);
     res.status(500).json({ message: error.message });

@@ -3,7 +3,7 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
-const session = require("express-session"); // session
+const session = require("express-session");
 const { connectToMongoDb } = require("./conf/db.js");
 const cors = require("cors");
 require("dotenv").config();
@@ -32,38 +32,31 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/files", express.static(path.join(__dirname, "public/files")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")))
+//app.use("/uploads", express.static("uploads"));
 
-// Configuration CORS corrigée - SUPPRESSION DES ESPACES DANS LES URLs
 app.use(
   cors({
     origin: [
-      "http://localhost:3000", 
-      "http://192.168.56.198:3000",  // ✅ Suppression de l'espace après "http://"
-      "http://192.168.56.198:5000",  // ✅ Suppression de l'espace après "http://"
-      "http://127.0.0.1:3000"
-    ], 
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ Ajout de "OPTIONS"
-    credentials: true,
-    allowedHeaders: [
-      "Content-Type", 
-      "Authorization", 
-      "Accept",           // ✅ Ajout de "Accept"
-      "Origin",           // ✅ Ajout de "Origin"
-      "X-Requested-With"  // ✅ Ajout de "X-Requested-With"
+      "http://localhost:3000",
+      "http://192.168.1.34:3000",
+      "http://192.168.1.34:5000",
+      "http://127.0.0.1:3000",
     ],
-    optionsSuccessStatus: 200 // ✅ Pour les navigateurs legacy
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+    optionsSuccessStatus: 200,
   })
 );
 
-// Middleware de débogage CORS (à supprimer en production)
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Origin: ${req.get('Origin')}`);
-  if (req.method === 'OPTIONS') {
-    console.log('Requête OPTIONS (CORS preflight)');
+  console.log(`${req.method} ${req.path} - Origin: ${req.get("Origin")}`);
+  if (req.method === "OPTIONS") {
+    console.log("Requête OPTIONS (CORS preflight)");
   }
-  if (req.method === 'POST' && req.path.includes('reset-password')) {
-    console.log('Reset password request body:', req.body);
+  if (req.method === "POST" && req.path.includes("reset-password")) {
+    console.log("Reset password request body:", req.body);
   }
   next();
 });
@@ -74,8 +67,8 @@ app.use(
     resave: false,
     saveUninitialized: true,
     cookie: {
-      secure: false, // Change à `true` si tu utilises HTTPS
-      maxAge: 24 * 60 * 60 * 1000, // 24 heures en millisecondes
+      secure: false,
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
@@ -93,16 +86,12 @@ app.use("/avis", avisRouter);
 app.use("/reservation", reservationRouter);
 app.use("/promotion", promotionRouter);
 app.use("/inscrire", inscrireRouter);
-app.use("/uploads", express.static("uploads")); // pour servir les images
 
-// catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// error handler
 app.use(function (err, req, res, next) {
-  // Renvoyer une réponse JSON au lieu de rendre une vue
   res.status(err.status || 500).json({
     message: err.message,
     error: req.app.get("env") === "development" ? err : {},
